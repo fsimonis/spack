@@ -5,7 +5,7 @@
 from spack.package import *
 
 
-class Precice(CMakePackage):
+class Precice(CMakePackage, CudaPackage, ROCmPackage):
     """preCICE (Precise Code Interaction Coupling Environment) is a
     coupling library for partitioned multi-physics simulations.
     Partitioned means that preCICE couples existing programs (solvers)
@@ -56,6 +56,7 @@ class Precice(CMakePackage):
     variant("petsc", default=True, description="Enable PETSc support")
     variant("python", default=False, description="Enable Python support", when="@2:")
     variant("shared", default=True, description="Build shared libraries")
+    variant("ginkgo", default=False, description="Enable Ginkgo mapping support", when="@3.2:")
 
     for build_type in ("Release", "RelWithDebInfo", "MinSizeRel"):
         variant(
@@ -111,6 +112,18 @@ class Precice(CMakePackage):
     depends_on("py-numpy@1.17:", when="+python", type=("build", "run"))
     depends_on("py-numpy@1.21.5:", when="+python@3.2:", type=("build", "run"))
 
+    with when("@3.2: +ginkgo"):
+        conflicts("cuda_arch=none", when="+cuda")
+        conflicts("amdgpu_target=none", when="+rocm")
+
+        depends_on("ginkgo@1.8.0:")
+        depends_on("ginkgo +cuda", when="+cuda")
+        depends_on("ginkgo +rocm", when="+rocm")
+
+        depends_on("kokkos@4.1:")
+        depends_on("kokkos +cuda", when="+cuda")
+        depends_on("kokkos +rocm", when="+rocm")
+
     # We require C++14 compiler support
     conflicts("%gcc@:4")
     conflicts("%apple-clang@:5")
@@ -149,6 +162,9 @@ class Precice(CMakePackage):
             self.define_from_variant(petsc_option, "petsc"),
             self.define_from_variant(python_option, "python"),
         ]
+
+        if spec.satisfies("@3.2:"):
+            cmake_args.append(self.define_from_variant("PRECICE_FEATURE_GINKGO_MAPPING", "ginkgo"))
 
         # The xSDK installation policies were implemented after 1.5.2.
         # The TPL arguments were removed in 3.0.0.
