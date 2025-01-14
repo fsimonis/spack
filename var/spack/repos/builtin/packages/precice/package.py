@@ -121,10 +121,9 @@ class Precice(CMakePackage, CudaPackage, ROCmPackage):
         depends_on("ginkgo +rocm", when="+rocm")
 
         depends_on("kokkos@4.1:")
-        depends_on("kokkos +cuda", when="+cuda")
+        depends_on("kokkos +cuda +cuda_lambda +cuda_constexpr", when="+cuda")
         depends_on("kokkos +rocm", when="+rocm")
         depends_on("kokkos +wrapper", when="+cuda %gcc")
-        depends_on("kokkos +cuda_lambda+cuda_constexpr", when="+cuda %clang")
 
     # We require C++14 compiler support
     conflicts("%gcc@:4")
